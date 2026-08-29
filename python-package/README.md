@@ -18,11 +18,7 @@ https://github.com/avnishcodes
 - REST APIs
 - Three.js
 
-## CLI
+## Installation
 
-This package provides a simple command-line interface to display my portfolio information.
-
-Run:
-
-```bash
-avnish
+```text
+pip install avnish-singh-portfolio
