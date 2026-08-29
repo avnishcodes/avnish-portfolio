@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "avnish-singh-portfolio"
+version = "0.1.0"
+description = "CLI portfolio of Avnish Singh, AI/ML & Software Engineer"
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [
+    {name = "Avnish Singh"}
+]
+keywords = ["portfolio", "ai", "machine-learning", "python", "software-engineer"]
+
+[project.scripts]
+avnish = "avnish_singh_portfolio.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
