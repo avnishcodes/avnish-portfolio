@@ -15,11 +15,20 @@ import { BlogArticleView } from './components/BlogArticleView';
 import { ContactSection } from './components/ContactSection';
 import { Footer } from './components/Footer';
 import { ResumeModal } from './components/ResumeModal';
+import { GeminiAiModal } from './components/GeminiAiModal';
+import { AiFloatingWidget } from './components/AiFloatingWidget';
 import { BlogPost } from './types';
 
 export default function App() {
   const [isResumeModalOpen, setIsResumeModalOpen] = useState(false);
+  const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [aiModalTab, setAiModalTab] = useState<'chat' | 'voice'>('chat');
   const [selectedBlogPost, setSelectedBlogPost] = useState<BlogPost | null>(null);
+
+  const handleOpenAi = (tab: 'chat' | 'voice' = 'chat') => {
+    setAiModalTab(tab);
+    setIsAiModalOpen(true);
+  };
 
   const handleNavigateHome = (sectionId?: string) => {
     setSelectedBlogPost(null);
@@ -43,7 +52,8 @@ export default function App() {
 
         {/* Navigation Header */}
         <Navbar 
-          onOpenResume={() => setIsResumeModalOpen(true)} 
+          onOpenResume={() => setIsResumeModalOpen(true)}
+          onOpenAiModal={(tab) => handleOpenAi(tab || 'chat')}
           onNavigateHome={handleNavigateHome}
           isArticleView={!!selectedBlogPost}
         />
@@ -81,6 +91,19 @@ export default function App() {
         {/* Footer */}
         <Footer />
 
+        {/* Floating AI Interaction Widget */}
+        <AiFloatingWidget
+          onOpenChat={() => handleOpenAi('chat')}
+          onOpenVoice={() => handleOpenAi('voice')}
+        />
+
+        {/* Gemini Multi-turn Chat & Live Voice AI Modal */}
+        <GeminiAiModal
+          isOpen={isAiModalOpen}
+          onClose={() => setIsAiModalOpen(false)}
+          initialTab={aiModalTab}
+        />
+
         {/* Interactive Resume Preview & Print Modal */}
         <ResumeModal
           isOpen={isResumeModalOpen}
@@ -90,3 +113,4 @@ export default function App() {
     </ThemeProvider>
   );
 }
+

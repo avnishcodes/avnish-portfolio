@@ -5,11 +5,17 @@ import { useTheme } from '../context/ThemeContext';
 
 interface NavbarProps {
   onOpenResume: () => void;
+  onOpenAiModal?: (initialTab?: 'chat' | 'voice') => void;
   onNavigateHome?: (sectionId?: string) => void;
   isArticleView?: boolean;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenResume, onNavigateHome, isArticleView }) => {
+export const Navbar: React.FC<NavbarProps> = ({ 
+  onOpenResume, 
+  onOpenAiModal, 
+  onNavigateHome, 
+  isArticleView 
+}) => {
   const [scrolled, setScrolled] = useState(false);
   const [activeSection, setActiveSection] = useState('home');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -44,6 +50,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenResume, onNavigateHome, is
     { label: 'Skills', href: '#skills', id: 'skills' },
     { label: 'Experience', href: '#experience', id: 'experience' },
     { label: 'Education', href: '#education', id: 'education' },
+    { label: 'Courses', href: '#courses', id: 'courses' },
     { label: 'Blog', href: '#blog', id: 'blog' },
     { label: 'Contact', href: '#contact', id: 'contact' },
   ];
@@ -145,14 +152,25 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenResume, onNavigateHome, is
           </div>
 
           {/* Mobile Right Controls */}
-          <div className="flex sm:hidden items-center gap-2">
+          <div className="flex sm:hidden items-center gap-1.5">
+            {/* Quick Hire Me CTA for Mobile Header */}
+            <a
+              id="mobile-quick-hire-btn"
+              href="mailto:Savnish174@gmail.com"
+              className="inline-flex items-center gap-1 px-2.5 py-1.5 text-[11px] font-semibold text-white bg-gradient-to-r from-indigo-600 to-cyan-600 hover:from-indigo-500 hover:to-cyan-500 rounded-lg shadow-sm shadow-indigo-500/25 transition-transform active:scale-95"
+            >
+              <Mail className="w-3 h-3" />
+              <span>Hire Me</span>
+              <ArrowUpRight className="w-3 h-3 opacity-80" />
+            </a>
+
             {/* Quick Theme Toggle for Mobile */}
             <button
               id="mobile-quick-theme-toggle"
               type="button"
               onClick={toggleTheme}
               aria-label={theme === 'dark' ? 'Switch to light theme' : 'Switch to dark theme'}
-              className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white"
+              className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white"
             >
               {theme === 'dark' ? (
                 <Sun className="w-4 h-4 text-amber-400" />
@@ -166,7 +184,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenResume, onNavigateHome, is
               id="mobile-menu-toggle"
               aria-label="Toggle Navigation Menu"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="p-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white"
+              className="p-1.5 rounded-lg bg-slate-900 border border-slate-800 text-slate-300 hover:text-white"
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -263,3 +281,4 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenResume, onNavigateHome, is
     </header>
   );
 };
+

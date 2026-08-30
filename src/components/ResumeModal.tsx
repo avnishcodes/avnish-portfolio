@@ -34,7 +34,7 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ isOpen, onClose }) => 
   return (
     <div
       id="resume-view-modal"
-      className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-950/90 backdrop-blur-md animate-fade-in overflow-y-auto"
+      className="fixed inset-0 z-[999] flex items-center justify-center p-2 sm:p-4 md:p-6 bg-slate-950/90 backdrop-blur-md animate-fade-in overflow-y-auto"
       onClick={onClose}
     >
       <div
@@ -197,7 +197,7 @@ export const ResumeModal: React.FC<ResumeModalProps> = ({ isOpen, onClose }) => 
                   </div>
                   <div className="pl-5 text-slate-300 print:text-black mt-0.5">
                     <span className="text-slate-400 mr-1.5">○</span>
-                    B.Tech in Computer Science &amp; Engineering | <span className="font-semibold">CGPA: 7.3</span>
+                    B.Tech in Computer Science &amp; Engineering (Lateral Entry) | <span className="font-semibold">CGPA: 7.09</span>
                   </div>
                 </div>
 

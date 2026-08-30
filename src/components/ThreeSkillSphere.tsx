@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Sparkles, RefreshCw, Cpu, Layers } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 interface SkillItem {
   name: string;
@@ -32,6 +33,8 @@ const SKILLS_LIST: SkillItem[] = [
 export const ThreeSkillSphere: React.FC<{
   onSelectSkill?: (name: string) => void;
 }> = ({ onSelectSkill }) => {
+  const { theme } = useTheme();
+  const isLight = theme === 'light';
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [activeSkill, setActiveSkill] = useState<string | null>(null);
   const [isRotating, setIsRotating] = useState<boolean>(true);
@@ -140,32 +143,56 @@ export const ThreeSkillSphere: React.FC<{
   };
 
   return (
-    <div className="relative w-full rounded-2xl bg-slate-900/60 border border-slate-800 p-5 overflow-hidden flex flex-col items-center justify-between group">
+    <div className={`relative w-full rounded-2xl p-5 overflow-hidden flex flex-col items-center justify-between group transition-all duration-300 ${
+      isLight 
+        ? 'bg-white/95 border border-slate-200 shadow-xl shadow-slate-200/50' 
+        : 'bg-slate-900/60 border border-slate-800 shadow-2xl'
+    }`}>
       
       {/* Background Decorative Rings */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
-        <div className="w-72 h-72 rounded-full border border-dashed border-indigo-500/40 animate-spin-slow" />
-        <div className="w-56 h-56 rounded-full border border-indigo-500/20 absolute" />
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-30">
+        <div className={`w-72 h-72 rounded-full border border-dashed animate-spin-slow ${
+          isLight ? 'border-indigo-400/50' : 'border-indigo-500/40'
+        }`} />
+        <div className={`w-56 h-56 rounded-full border absolute ${
+          isLight ? 'border-indigo-300/40' : 'border-indigo-500/20'
+        }`} />
       </div>
 
       {/* Header Info Bar */}
       <div className="w-full flex items-center justify-between mb-4 z-10">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
+          <div className={`w-7 h-7 rounded-lg border flex items-center justify-center ${
+            isLight
+              ? 'bg-indigo-50 border-indigo-200 text-indigo-600'
+              : 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400'
+          }`}>
             <Cpu className="w-3.5 h-3.5" />
           </div>
           <div>
-            <h4 className="text-xs font-semibold text-white">Interactive 3D Skill Constellation</h4>
-            <span className="text-[10px] font-mono text-slate-400">Drag to spin · Click tag to inspect</span>
+            <h4 className={`text-xs font-bold ${
+              isLight ? 'text-slate-900' : 'text-white'
+            }`}>
+              Interactive 3D Skill Constellation
+            </h4>
+            <span className={`text-[10px] font-mono ${
+              isLight ? 'text-slate-500' : 'text-slate-400'
+            }`}>
+              Drag to spin · Click tag to inspect
+            </span>
           </div>
         </div>
 
         <button
           onClick={() => setIsRotating(!isRotating)}
           className={`p-1.5 rounded-lg border text-xs font-mono transition-all ${
-            isRotating
-              ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300'
-              : 'bg-slate-800 border-slate-700 text-slate-400'
+            isLight
+              ? isRotating
+                ? 'bg-indigo-50 border-indigo-200 text-indigo-600 shadow-sm'
+                : 'bg-slate-100 border-slate-200 text-slate-600 hover:bg-slate-200'
+              : isRotating
+                ? 'bg-indigo-500/10 border-indigo-500/30 text-indigo-300'
+                : 'bg-slate-800 border-slate-700 text-slate-400 hover:text-white'
           }`}
           title={isRotating ? 'Pause rotation' : 'Resume rotation'}
         >
@@ -182,39 +209,54 @@ export const ThreeSkillSphere: React.FC<{
         onMouseLeave={handleMouseUp}
         className="relative w-full h-[360px] flex items-center justify-center cursor-grab active:cursor-grabbing select-none"
       >
-        {tagPositions.map((tag, idx) => (
-          <button
-            key={idx}
-            onClick={() => {
-              setActiveSkill(tag.name);
-              onSelectSkill?.(tag.name);
-            }}
-            onMouseEnter={() => setActiveSkill(tag.name)}
-            onMouseLeave={() => setActiveSkill(null)}
-            style={{
-              transform: `translate3d(${tag.x}px, ${tag.y}px, 0px) scale(${tag.scale})`,
-              opacity: tag.alpha,
-              zIndex: tag.zIndex,
-            }}
-            className={`absolute px-2.5 py-1 rounded-xl font-mono text-xs whitespace-nowrap transition-all duration-75 flex items-center gap-1.5 shadow-md ${
-              activeSkill === tag.name
-                ? 'bg-indigo-600 text-white scale-125 z-50 ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-950 shadow-indigo-500/50'
-                : 'bg-slate-950/85 text-slate-200 border border-slate-800 hover:border-indigo-400/60'
-            }`}
-          >
-            <span className="text-sm">{tag.icon}</span>
-            <span className="font-medium text-[11px]">{tag.name}</span>
-          </button>
-        ))}
+        {tagPositions.map((tag, idx) => {
+          const isActive = activeSkill === tag.name;
+          return (
+            <button
+              key={idx}
+              onClick={() => {
+                setActiveSkill(tag.name);
+                onSelectSkill?.(tag.name);
+              }}
+              onMouseEnter={() => setActiveSkill(tag.name)}
+              onMouseLeave={() => setActiveSkill(null)}
+              style={{
+                transform: `translate3d(${tag.x}px, ${tag.y}px, 0px) scale(${tag.scale})`,
+                opacity: tag.alpha,
+                zIndex: tag.zIndex,
+              }}
+              className={`absolute px-3 py-1.5 rounded-xl font-mono text-xs whitespace-nowrap transition-all duration-75 flex items-center gap-1.5 shadow-md ${
+                isActive
+                  ? 'bg-indigo-600 text-white scale-125 z-50 ring-2 ring-cyan-400 ring-offset-2 ring-offset-slate-100 dark:ring-offset-slate-950 shadow-lg shadow-indigo-500/40'
+                  : isLight
+                    ? 'bg-white text-slate-800 border border-slate-200/90 hover:border-indigo-400 hover:text-indigo-600 hover:shadow-lg shadow-slate-200/80'
+                    : 'bg-slate-900/95 text-slate-200 border border-slate-800 hover:border-indigo-400/60 hover:text-white'
+              }`}
+            >
+              <span className="text-sm">{tag.icon}</span>
+              <span className="font-semibold text-[11px] tracking-tight">{tag.name}</span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Footer Active Tag Status Indicator */}
-      <div className="w-full pt-3 border-t border-slate-800/80 flex items-center justify-between text-xs font-mono z-10">
-        <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
-          <Sparkles className="w-3.5 h-3.5 text-indigo-400" />
-          <span>{activeSkill ? `Selected: ${activeSkill}` : 'Hover or tap nodes to lock focus'}</span>
+      <div className={`w-full pt-3 border-t flex items-center justify-between text-xs font-mono z-10 ${
+        isLight ? 'border-slate-200' : 'border-slate-800/80'
+      }`}>
+        <div className={`flex items-center gap-1.5 text-[11px] ${
+          isLight ? 'text-slate-600' : 'text-slate-400'
+        }`}>
+          <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+          <span className="font-medium">
+            {activeSkill ? `Selected: ${activeSkill}` : 'Hover or tap nodes to lock focus'}
+          </span>
         </div>
-        <span className="text-[10px] text-slate-500">{SKILLS_LIST.length} Core Competencies</span>
+        <span className={`text-[10px] ${
+          isLight ? 'text-slate-500' : 'text-slate-500'
+        }`}>
+          {SKILLS_LIST.length} Core Competencies
+        </span>
       </div>
     </div>
   );

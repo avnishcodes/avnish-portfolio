@@ -7,7 +7,6 @@ import {
   Copy, 
   Check, 
   Send, 
-  MapPin, 
   ArrowUpRight, 
   MessageSquare,
   Sparkles,
@@ -206,14 +205,14 @@ export const ContactSection: React.FC = () => {
               <ArrowUpRight className="w-4 h-4 text-slate-500 group-hover:text-indigo-400 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
             </a>
 
-            {/* Location & Availability Note */}
+            {/* Availability Note */}
             <div className="p-4.5 rounded-2xl bg-slate-900/60 border border-slate-800">
               <div className="flex items-center gap-2 text-xs font-mono text-slate-400 mb-1.5">
-                <MapPin className="w-3.5 h-3.5 text-teal-400" />
-                <span>Punjab, India · Open to Remote &amp; On-Site Roles</span>
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse inline-block" />
+                <span className="text-emerald-300 font-medium">Open to Remote &amp; On-Site Roles</span>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Available for Summer/Winter 2025–2026 internships and software developer opportunities. Typically responds within 24 hours.
+                Available for internships and software developer opportunities. Typically responds within 24 hours.
               </p>
             </div>
 

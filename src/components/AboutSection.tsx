@@ -194,13 +194,18 @@ export const AboutSection: React.FC = () => {
               </div>
             </TiltCard>
 
-            {/* Quick stats banner */}
+            {/* View Full Academics Link / Status Note */}
             <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center justify-between text-xs font-mono">
               <div className="flex items-center gap-2">
-                <Award className="w-4 h-4 text-purple-400" />
-                <span className="text-slate-300">Diploma with Grade A</span>
+                <Sparkles className="w-4 h-4 text-indigo-400" />
+                <span className="text-slate-300">Continuous Learner &amp; Builder</span>
               </div>
-              <span className="text-indigo-400 font-semibold">2021–2024</span>
+              <a
+                href="#education"
+                className="text-indigo-400 hover:text-indigo-300 transition-colors flex items-center gap-1 font-semibold"
+              >
+                <span>View Academics →</span>
+              </a>
             </div>
 
           </div>

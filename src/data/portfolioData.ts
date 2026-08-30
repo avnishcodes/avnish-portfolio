@@ -112,21 +112,21 @@ export const educationData: EducationItem[] = [
     institution: 'I.K. Gujral Punjab Technical University (IKGPTU)',
     location: 'Kapurthala, Punjab',
     period: '07/2024 – Present',
-    grade: 'CGPA: 7.3',
+    grade: 'CGPA: 7.09',
     status: 'Present',
     accent: 'blue',
     about: 'Pursuing B.Tech in Computer Science & Engineering with coursework and project focus on Machine Learning, Data Structures, Algorithms, and Software Engineering.',
     highlights: [
       {
         title: 'B.Tech CSE Degree',
-        detail: 'Enrolled in 4-year undergraduate engineering program maintaining CGPA: 7.3.'
+        detail: 'Pursuing B.Tech in Computer Science & Engineering through lateral entry, currently maintaining a CGPA of 7.09.'
       },
       {
         title: 'Campus Leadership',
         detail: 'Serving as PWSkill Campus Ambassador and active NCC Cadet representing the university.'
       }
     ],
-    badges: ['B.Tech CSE', 'IKGPTU Kapurthala', 'CGPA: 7.3', '07/2024 – Present']
+    badges: ['B.Tech CSE', 'IKGPTU Kapurthala', 'CGPA: 7.09', '07/2024 – Present']
   },
   {
     id: 'edu-diploma',
@@ -166,14 +166,14 @@ export const projectsData: Project[] = [
       'Developed regression model with end-to-end data preprocessing, feature scaling, model training, and performance evaluation',
       'Implemented using Python, Scikit-learn, Pandas, NumPy, Matplotlib, and Seaborn for visualization and model development'
     ],
-    technologies: ['Python', 'Scikit-learn', 'Pandas', 'NumPy', 'Matplotlib', 'Seaborn', 'Regression Models'],
+    technologies: ['Python', 'Scikit-learn', 'Pandas', 'NumPy', 'Matplotlib', 'Seaborn', 'Regression Models', 'Streamlit'],
     metrics: [
       { label: 'Domain', value: 'Machine Learning' },
       { label: 'Task', value: 'Regression' },
-      { label: 'Tools', value: 'Scikit-learn / Python' }
+      { label: 'Live App', value: 'Streamlit Cloud' }
     ],
-    githubUrl: 'https://github.com/avnishcodes',
-    liveDemoUrl: 'https://github.com/avnishcodes',
+    githubUrl: 'https://github.com/avnishcodes/cement-strength-predictor',
+    liveDemoUrl: 'https://cement-strength-predictor-hwbassqqhzunrrnxusfnak.streamlit.app/',
     featured: true,
     accentColor: '#3b82f6'
   },
@@ -325,24 +325,67 @@ export const achievementsData: AchievementItem[] = [
 
 export const certificationsData: CertificationItem[] = [
   {
+    id: 'course-azure-data-eng',
+    title: 'Azure Data Engineering End-to-End 2026',
+    issuer: 'Udemy · Cloud and Data Universe',
+    platform: 'Udemy',
+    date: '2026',
+    status: 'In Progress',
+    category: 'course',
+    accent: 'blue',
+    icon: 'Cloud',
+    skills: ['Microsoft Azure', 'PySpark', 'Python', 'Azure Data Factory', 'Databricks', 'Cloud ETL', 'SQL'],
+    description: 'Comprehensive end-to-end cloud data engineering training covering distributed processing with PySpark, building scalable ETL pipelines in Azure Data Factory, Databricks analytics, and cloud lakehouse architecture.'
+  },
+  {
+    id: 'course-sql-mysql-bi',
+    title: 'SQL – MySQL for Data Analytics and Business Intelligence',
+    issuer: 'Udemy · 365 Careers',
+    platform: 'Udemy',
+    date: '2026',
+    status: 'In Progress',
+    category: 'course',
+    accent: 'amber',
+    icon: 'Database',
+    skills: ['MySQL', 'SQL Queries', 'Data Analytics', 'Business Intelligence', 'Database Design', 'Relational DB'],
+    description: 'Specialized business intelligence and data analytics coursework with MySQL. Covers complex relational joins, aggregations, window functions, database normalization, and analytics reporting.'
+  },
+  {
+    id: 'course-how-to-learn',
+    title: 'How to Learn: Effective Approaches for Self-Guided Learning',
+    issuer: 'Udemy',
+    platform: 'Udemy',
+    date: '2026',
+    status: 'Active',
+    category: 'specialization',
+    accent: 'purple',
+    icon: 'BookOpen',
+    skills: ['Self-Guided Learning', 'Cognitive Strategies', 'Accelerated Learning', 'Technical Mastery'],
+    description: 'Frameworks and proven cognitive approaches for structured self-directed learning, metacognition, mental modeling, and rapid acquisition of complex technical domains.'
+  },
+  {
     id: 'cert-ml',
     title: 'Machine Learning & Predictive Modeling',
     issuer: 'EME Technologies',
+    platform: 'EME Technologies',
     date: 'July 2025',
-    credentialId: 'EME-ML-2025',
+    category: 'certification',
+    accent: 'teal',
     icon: 'Brain',
-    skills: ['Scikit-Learn', 'Random Forest', 'SVM', 'Regression Models'],
-    description: 'Industrial project training in supervised machine learning classification, regression, and feature engineering.'
+    skills: ['Scikit-Learn', 'Random Forest', 'SVM', 'Regression Models', 'Feature Engineering'],
+    description: 'Industrial project training in supervised machine learning classification, regression modeling, and performance evaluation on real-world datasets.'
   },
   {
     id: 'cert-python',
     title: 'Python Software Development & Automation',
     issuer: 'EME Technologies',
+    platform: 'EME Technologies',
     date: 'August 2023',
-    credentialId: 'EME-PY-2023',
+    category: 'certification',
+    accent: 'indigo',
     icon: 'Code2',
-    skills: ['Python', 'Text Editor', 'Data Analysis', 'Web Scraping'],
-    description: '45-day industrial training certification covering Python software engineering, automation, and data pipelines.'
+    skills: ['Python', 'Text Editor', 'Data Analysis', 'Web Scraping', 'Tkinter GUI'],
+    description: '45-day industrial training certification covering Python software engineering, GUI development, automation scripts, and data pipelines.'
   }
 ];
 

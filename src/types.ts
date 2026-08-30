@@ -68,6 +68,13 @@ export interface CertificationItem {
   icon: string;
   skills: string[];
   description: string;
+  category?: 'certification' | 'course' | 'specialization';
+  platform?: string;
+  instructor?: string;
+  status?: 'Verified' | 'Completed' | 'In Progress' | 'Active';
+  progress?: number;
+  rating?: number;
+  accent?: 'blue' | 'teal' | 'amber' | 'purple' | 'cyan' | 'indigo';
 }
 
 export interface HobbyItem {

@@ -162,37 +162,35 @@ export const Hero: React.FC<HeroProps> = ({ onOpenResume }) => {
             </div>
 
             {/* Social Link Quick Row */}
-            <div className="flex items-center gap-4 mt-8 pt-6 border-t border-slate-800/80 w-full max-w-lg text-xs text-slate-400">
-              <span className="font-mono text-slate-500">Connect:</span>
+            <div className="flex flex-wrap items-center gap-x-2.5 sm:gap-x-3 gap-y-2 mt-8 pt-6 border-t border-slate-800/80 w-full max-w-lg text-xs text-slate-400">
+              <span className="font-mono text-slate-500 text-[11px] sm:text-xs">Connect:</span>
               <a
                 id="hero-github-link"
                 href={personalInfo.github}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-1.5 hover:text-white transition-colors"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-slate-300 hover:text-white transition-all text-xs"
               >
-                <Github className="w-4 h-4 text-slate-300" />
+                <Github className="w-3.5 h-3.5 text-slate-300 shrink-0" />
                 <span>GitHub</span>
               </a>
-              <span className="text-slate-700">•</span>
               <a
                 id="hero-linkedin-link"
                 href={personalInfo.linkedin}
                 target="_blank"
                 rel="noreferrer"
-                className="flex items-center gap-1.5 hover:text-white transition-colors"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-indigo-500/40 text-slate-300 hover:text-white transition-all text-xs"
               >
-                <Linkedin className="w-4 h-4 text-indigo-400" />
+                <Linkedin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                 <span>LinkedIn</span>
               </a>
-              <span className="text-slate-700">•</span>
               <a
                 id="hero-email-link"
                 href={`mailto:${personalInfo.email}`}
-                className="flex items-center gap-1.5 hover:text-white transition-colors"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900/80 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/40 text-slate-300 hover:text-white transition-all text-xs max-w-full"
               >
-                <Mail className="w-4 h-4 text-cyan-400" />
-                <span>{personalInfo.email}</span>
+                <Mail className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                <span className="truncate">{personalInfo.email}</span>
               </a>
             </div>
 

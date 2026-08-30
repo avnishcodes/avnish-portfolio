@@ -1,7 +1,7 @@
 {
   "name": "Avnish Singh Portfolio",
   "description": "Professional personal portfolio website featuring biography, machine learning and software projects showcase, skills matrix, education, experience, and contact links.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
 

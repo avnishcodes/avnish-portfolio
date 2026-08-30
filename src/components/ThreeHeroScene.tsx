@@ -202,11 +202,11 @@ export const ThreeHeroScene: React.FC = () => {
     window.addEventListener('resize', handleResize);
 
     // Animation Loop
-    let clock = new THREE.Clock();
+    const startTime = performance.now();
 
     const animate = () => {
       animationFrameIdRef.current = requestAnimationFrame(animate);
-      const elapsedTime = clock.getElapsedTime();
+      const elapsedTime = (performance.now() - startTime) * 0.001;
 
       // Smooth mouse follow
       mouseRef.current.x += (mouseRef.current.targetX - mouseRef.current.x) * 0.05;
