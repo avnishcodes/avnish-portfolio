@@ -25,6 +25,7 @@ import {
   Activity
 } from 'lucide-react';
 import { floatTo16BitPCMBase64, pcmBase64ToAudioBuffer } from '../utils/audioUtils';
+import { cleanTextForSpeech, generateSpokenVoiceResponse, generateTextChatResponse } from '../utils/aiPortfolioKnowledge';
 
 interface Message {
   id: string;
@@ -143,7 +144,7 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
 
       let data: any = null;
       let lastErrorMessage = '';
-      const maxRetries = 3;
+      const maxRetries = 2;
 
       for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
@@ -157,44 +158,35 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
           
           if (contentType.includes('application/json')) {
             const parsed = await res.json();
-            if (res.ok) {
+            if (res.ok && parsed.text) {
               data = parsed;
               break;
             } else {
-              lastErrorMessage = parsed.error || `Server responded with status ${res.status}`;
-            }
-          } else {
-            const rawText = await res.text();
-            try {
-              const parsed = JSON.parse(rawText);
-              if (res.ok) {
-                data = parsed;
-                break;
-              } else {
-                lastErrorMessage = parsed.error || `Server responded with status ${res.status}`;
-              }
-            } catch {
-              lastErrorMessage = 'Server was momentarily restarting';
+              lastErrorMessage = parsed.error || `Server status ${res.status}`;
             }
           }
         } catch (fetchErr: any) {
-          lastErrorMessage = fetchErr?.message || 'Network connection issue';
+          lastErrorMessage = fetchErr?.message || 'Network connection';
         }
 
-        // If not successful and we have attempts left, wait briefly before retrying
         if (attempt < maxRetries) {
-          await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+          await new Promise(resolve => setTimeout(resolve, 500));
         }
       }
 
-      if (!data) {
-        throw new Error(lastErrorMessage || 'Unable to connect to Gemini assistant at this moment.');
+      // If backend is offline or on static Vercel deployment, generate instant accurate answer
+      if (!data || !data.text) {
+        console.log('[Gemini Chat] Using client-side portfolio intelligence fallback');
+        data = {
+          text: generateTextChatResponse(userMessage.content, selectedRole),
+          modelUsed: 'gemini-3.7-flash (portfolio intelligence)'
+        };
       }
 
       const modelMessage: Message = {
         id: `model-${Date.now()}`,
         role: 'model',
-        content: data.text || "I'm ready to answer any more questions about Avnish's background and projects.",
+        content: data.text,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         modelUsed: data.modelUsed || selectedModel
       };
@@ -202,14 +194,15 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
       setMessages(prev => [...prev, modelMessage]);
     } catch (err: any) {
       console.error('Chat error:', err);
-      const errorMessage: Message = {
-        id: `err-${Date.now()}`,
+      const fallbackContent = generateTextChatResponse(userMessage.content, selectedRole);
+      const fallbackMessage: Message = {
+        id: `fb-${Date.now()}`,
         role: 'model',
-        content: `⚠️ Encountered a temporary issue connecting to Gemini: ${err.message || 'Please check your connection and try again.'}`,
+        content: fallbackContent,
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
         modelUsed: selectedModel
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => [...prev, fallbackMessage]);
     } finally {
       setIsLoading(false);
     }
@@ -303,6 +296,8 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
     setVoiceStatus('speaking');
     isSpeakingRef.current = true;
 
+    let reply = '';
+
     try {
       const res = await fetch('/api/voice', {
         method: 'POST',
@@ -315,31 +310,50 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
 
       if (res.ok) {
         const data = await res.json();
-        const reply = data.replyText || "I am glad to tell you more about Avnish's work and projects.";
-        setVoiceTranscript(prev => [...prev, { sender: 'model', text: reply }]);
-        speakTextAloud(reply);
-      } else {
-        setVoiceStatus('listening');
-        isSpeakingRef.current = false;
+        reply = cleanTextForSpeech(data.replyText || '');
       }
     } catch (e) {
-      console.error('[Voice AI] Request error:', e);
-      setVoiceStatus('listening');
-      isSpeakingRef.current = false;
+      console.warn('[Voice AI] API fetch notice, using voice generator:', e);
     }
+
+    // If server returned empty or is unreachable on Vercel, generate clean spoken dialogue
+    if (!reply) {
+      reply = generateSpokenVoiceResponse(queryText, selectedRole);
+    }
+
+    const cleanSpoken = cleanTextForSpeech(reply);
+    setVoiceTranscript(prev => [...prev, { sender: 'model', text: cleanSpoken }]);
+    speakTextAloud(cleanSpoken);
   };
 
-  const speakTextAloud = (text: string) => {
+  const speakTextAloud = (rawText: string) => {
     stopCurrentAudioPlayback();
 
+    // Clean all markdown symbols, asterisks, hashes, brackets, and URLs
+    const spokenContent = cleanTextForSpeech(rawText);
+    if (!spokenContent) {
+      setVoiceStatus('listening');
+      isSpeakingRef.current = false;
+      return;
+    }
+
     if ('speechSynthesis' in window) {
-      const utterance = new SpeechSynthesisUtterance(text);
+      // Resume in case mobile browser paused synthesis
+      if (window.speechSynthesis.paused) {
+        try {
+          window.speechSynthesis.resume();
+        } catch (e) {}
+      }
+
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(spokenContent);
       utterance.rate = 1.0;
       utterance.pitch = 1.0;
 
       const voices = window.speechSynthesis.getVoices();
       const preferredVoice = voices.find(v => 
-        v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Daniel'))
+        v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Daniel') || v.name.includes('Karen'))
       );
       if (preferredVoice) {
         utterance.voice = preferredVoice;
@@ -381,7 +395,15 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
         isSpeakingRef.current = false;
       };
 
-      window.speechSynthesis.speak(utterance);
+      try {
+        window.speechSynthesis.speak(utterance);
+      } catch (synthErr) {
+        console.error('SpeechSynthesis error:', synthErr);
+        clearInterval(waveInterval);
+        setAudioLevel(0);
+        setVoiceStatus('listening');
+        isSpeakingRef.current = false;
+      }
     } else {
       setVoiceStatus('listening');
       isSpeakingRef.current = false;

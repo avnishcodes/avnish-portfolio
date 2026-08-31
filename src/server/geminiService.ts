@@ -1,4 +1,5 @@
 import { GoogleGenAI } from '@google/genai';
+import { generateTextChatResponse, generateSpokenVoiceResponse, cleanTextForSpeech } from '../utils/aiPortfolioKnowledge';
 
 // Lazy GoogleGenAI client helper
 export function getGeminiClient(): GoogleGenAI {
@@ -154,14 +155,14 @@ export async function processChatRequest(options: {
 
     // If still empty (e.g. quota limit 429 or missing key), generate contextual portfolio answer
     if (!replyText) {
-      const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user')?.content?.toLowerCase() || '';
-      replyText = generatePortfolioFallbackResponse(lastUserMsg, role);
+      const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user')?.content || '';
+      replyText = generateTextChatResponse(lastUserMsg, role);
       usedModel = 'gemini-assistant (portfolio intelligence)';
     }
   }
 
   if (!replyText) {
-    replyText = "I'm here to help answer questions about Avnish's Machine Learning projects, Python development, academic credentials at IKGPTU, and industry experience.";
+    replyText = generateTextChatResponse('', role);
   }
 
   return {
@@ -169,24 +170,4 @@ export async function processChatRequest(options: {
     modelUsed: usedModel,
     roleUsed: role,
   };
-}
-
-// Helper for contextual fallback response when API quota is exhausted or key is being initialized
-export function generatePortfolioFallbackResponse(query: string, role?: string): string {
-  if (query.includes('project') || query.includes('cement') || query.includes('strength')) {
-    return `### Avnish's Featured Projects\n\n1. **Cement Compressive Strength Predictor (Machine Learning / Scikit-learn)**\n   - Predicts 28-day concrete strength using regression models (Random Forest, SVM, Decision Trees).\n   - Features automated preprocessing, scaling, and interactive Streamlit UI with real-time analytics.\n   - **Live App**: [Streamlit Deployment](https://cement-strength-predictor-hwbassqqhzunrrnxusfnak.streamlit.app/)\n\n2. **Online E-Library System (Full-Stack)**\n   - Digital library management system built with HTML, CSS, JavaScript, and PHP with SQL databases for cataloging and user borrowing.\n\n3. **SkyView Weather App (Desktop Python)**\n   - Python GUI desktop application utilizing Tkinter and live OpenWeatherMap REST API integrations.`;
-  }
-  if (query.includes('intern') || query.includes('eme') || query.includes('invisiax') || query.includes('experience') || query.includes('work')) {
-    return `### Work Experience & Internships\n\n- **QA Tester at InvisiaX** *(07/2026 – Present, Remote)*: Conducting manual quality assurance, identifying functional edge-cases, and testing responsive web applications.\n- **ML Industrial Project Intern at EME Technologies, Mohali** *(06/2025 – 07/2025)*: Trained supervised machine learning models (SVM, Random Forest, Regression) and built end-to-end data pipelines.\n- **Python Developer Trainee at EME Technologies** *(07/2023 – 08/2023)*: Built desktop automation tools and custom text editor software in Python.`;
-  }
-  if (query.includes('skill') || query.includes('tech') || query.includes('python') || query.includes('ml')) {
-    return `### Core Technical Stack\n\n- **Languages**: Python (Advanced), C, C++, SQL\n- **Machine Learning & AI**: Scikit-learn, Random Forest, SVM, Decision Trees, Regression Models, Google Gemini GenAI\n- **Data & Analytics**: Pandas, NumPy, Matplotlib, Seaborn, Jupyter Notebooks\n- **Web & Tools**: REST APIs, HTML5, CSS3, JavaScript, PHP, Git, GitHub, Streamlit`;
-  }
-  if (query.includes('education') || query.includes('ikgptu') || query.includes('degree') || query.includes('diploma') || query.includes('college') || query.includes('btech')) {
-    return `### Educational Background\n\n- **B.Tech in Computer Science & Engineering** *(07/2024 – Present, Lateral Entry, CGPA: 7.09)*: I.K. Gujral Punjab Technical University (IKGPTU), Main Campus, Kapurthala.\n- **Diploma in Computer Science & Engineering** *(08/2021 – 05/2024, CGPA: 7.05, Grade A)*: Govt. Polytechnic College, Ferozepur.`;
-  }
-  if (query.includes('contact') || query.includes('email') || query.includes('hire') || query.includes('resume') || query.includes('phone')) {
-    return `### Contact Information\n\n- **Email**: savnish174@gmail.com\n- **Phone**: (+91) 8429084842\n- **GitHub**: [github.com/avnishcodes](https://github.com/avnishcodes)\n- **LinkedIn**: [linkedin.com/in/avnishcodes](https://www.linkedin.com/in/avnishcodes)\n\nAvnish is actively open to internships and developer roles!`;
-  }
-  return `Avnish Singh is a Computer Science & Engineering undergraduate at IKGPTU specializing in **Machine Learning (Scikit-learn, Regression, Classification)** and **Python Software Development**.\n\nHe has built production ML models including the **Cement Compressive Strength Predictor**, worked as an ML Intern at **EME Technologies**, and is currently a QA Tester at **InvisiaX**.\n\nFeel free to ask about his specific projects, tech stack, or get in touch for developer opportunities!`;
 }

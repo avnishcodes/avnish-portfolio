@@ -5,6 +5,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import { Modality, type LiveServerMessage } from '@google/genai';
 import dotenv from 'dotenv';
 import { processChatRequest, getGeminiClient } from './src/server/geminiService.js';
+import { cleanTextForSpeech, generateSpokenVoiceResponse } from './src/utils/aiPortfolioKnowledge.js';
 
 dotenv.config();
 
@@ -79,11 +80,13 @@ app.post('/api/voice', async (req, res) => {
       messages,
       model: 'gemini-3.1-flash-lite',
       role,
-      customInstruction: 'You are speaking via interactive voice. Keep your answer natural, spoken-style, and concise (under 2-3 sentences) so it sounds smooth when spoken aloud.'
+      customInstruction: 'You are speaking directly over a real-time voice call. Speak in natural, warm, conversational English sentences without ANY Markdown syntax, symbols, bullet points, asterisks, hashes, or raw URLs. Keep your response within 2-3 engaging spoken sentences.'
     });
 
+    const spokenCleanText = cleanTextForSpeech(result.text);
+
     return res.json({
-      replyText: result.text,
+      replyText: spokenCleanText || generateSpokenVoiceResponse(prompt, role),
       modelUsed: result.modelUsed,
       roleUsed: result.roleUsed
     });
