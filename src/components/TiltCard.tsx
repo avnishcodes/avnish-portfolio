@@ -28,6 +28,11 @@ export const TiltCard: React.FC<TiltCardProps> = ({
   });
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    // Only apply dynamic 3D tilt on devices with hover capabilities (mouse/trackpad)
+    if (typeof window !== 'undefined' && !window.matchMedia('(hover: hover)').matches) {
+      return;
+    }
+
     const card = cardRef.current;
     if (!card) return;
 
@@ -70,8 +75,9 @@ export const TiltCard: React.FC<TiltCardProps> = ({
         transform: transform || undefined,
         transformStyle: 'preserve-3d',
         transition: transform ? 'transform 0.1s ease-out' : 'transform 0.5s cubic-bezier(0.23, 1, 0.32, 1)',
+        touchAction: 'pan-y',
       }}
-      className={`relative will-change-transform ${className}`}
+      className={`relative will-change-transform touch-pan-y w-full max-w-full min-w-0 ${className}`}
     >
       {children}
 

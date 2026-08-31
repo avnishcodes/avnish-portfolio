@@ -94,7 +94,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ project, onClose }) 
         </div>
 
         {/* Scrollable Content Body */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-8 space-y-6 text-slate-300 overscroll-contain">
+        <div className="flex-1 overflow-y-auto touch-scroll-y p-5 sm:p-8 space-y-6 text-slate-300 overscroll-contain">
           
           {/* Title & Tagline Header */}
           <div>

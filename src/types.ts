@@ -104,6 +104,7 @@ export interface PersonalInfo {
   status: string;
   shortBio: string;
   fullBio: string[];
+  avatarUrl?: string;
 }
 
 export interface PositionOfResponsibility {

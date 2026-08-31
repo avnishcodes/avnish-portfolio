@@ -339,7 +339,7 @@ export const BlogArticleView: React.FC<BlogArticleViewProps> = ({
                   {post.author.name}
                 </span>
                 <span className="text-xs text-indigo-300 font-mono">
-                  {post.author.role} · Computer Science &amp; Engineering
+                  {post.author.role} · Computer Science & Engineering
                 </span>
               </div>
             </div>

@@ -69,13 +69,13 @@ export const ProjectsSection: React.FC = () => {
         </div>
 
         {/* Category Filters */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-3 mb-8 no-scrollbar">
+        <div className="flex items-center gap-2 overflow-x-auto pb-3 mb-8 no-scrollbar touch-scroll-x scroll-smooth overscroll-x-contain w-full min-w-0">
           {categories.map((cat) => (
             <button
               key={cat.id}
               id={`projects-filter-${cat.id}`}
               onClick={() => setSelectedCategory(cat.id)}
-              className={`px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1.5 ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-medium whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
                 selectedCategory === cat.id
                   ? 'bg-indigo-600 text-white shadow-sm border border-indigo-500'
                   : 'bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800'
@@ -106,12 +106,12 @@ export const ProjectsSection: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 w-full min-w-0">
             {filteredProjects.map((project) => (
-              <TiltCard key={project.id} maxTilt={7} scale={1.02} className="h-full">
+              <TiltCard key={project.id} maxTilt={7} scale={1.02} className="h-full w-full min-w-0">
                 <div
                   id={`project-card-${project.id}`}
-                  className="flex flex-col justify-between bg-slate-900/80 border border-slate-800 hover:border-indigo-500/40 rounded-2xl p-6 transition-all duration-300 hover:shadow-xl hover:shadow-black/50 group relative overflow-hidden h-full"
+                  className="flex flex-col justify-between bg-slate-900/80 border border-slate-800 hover:border-indigo-500/40 rounded-2xl p-5 sm:p-6 transition-all duration-300 hover:shadow-xl hover:shadow-black/50 group relative overflow-hidden h-full w-full min-w-0 box-border"
                 >
                   {/* Subtle top color accent */}
                   <div
@@ -119,11 +119,11 @@ export const ProjectsSection: React.FC = () => {
                     style={{ backgroundColor: project.accentColor }}
                   />
 
-                  <div>
+                  <div className="min-w-0 w-full">
                     {/* Category Pill & Star */}
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between gap-2 mb-4 min-w-0">
                       <span
-                        className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium border"
+                        className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-medium border truncate"
                         style={{
                           backgroundColor: `${project.accentColor}12`,
                           borderColor: `${project.accentColor}30`,
@@ -134,7 +134,7 @@ export const ProjectsSection: React.FC = () => {
                       </span>
 
                       {project.featured && (
-                        <span className="flex items-center gap-1 text-[11px] font-mono text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md border border-amber-400/20">
+                        <span className="flex items-center gap-1 text-[11px] font-mono text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded-md border border-amber-400/20 shrink-0">
                           <Sparkles className="w-3 h-3" />
                           Featured
                         </span>
@@ -142,27 +142,27 @@ export const ProjectsSection: React.FC = () => {
                     </div>
 
                     {/* Title & Tagline */}
-                    <h3 className="text-base font-semibold text-white group-hover:text-indigo-300 transition-colors mb-1">
+                    <h3 className="text-base font-semibold text-white group-hover:text-indigo-300 transition-colors mb-1 break-words">
                       {project.title}
                     </h3>
-                    <p className="text-[11px] font-mono text-slate-400 mb-2.5">
+                    <p className="text-[11px] font-mono text-slate-400 mb-2.5 break-words">
                       {project.tagline}
                     </p>
 
                     {/* Description */}
-                    <p className="text-xs text-slate-300 leading-relaxed mb-3.5 line-clamp-3 font-normal">
+                    <p className="text-xs text-slate-300 leading-relaxed mb-3.5 line-clamp-3 font-normal break-words">
                       {project.description}
                     </p>
 
                     {/* Metrics preview if available */}
                     {project.metrics && project.metrics.length > 0 && (
-                      <div className="grid grid-cols-2 gap-2 mb-4 p-2.5 rounded-lg bg-slate-950/60 border border-slate-800/80">
+                      <div className="grid grid-cols-2 gap-2 mb-4 p-2.5 rounded-lg bg-slate-950/60 border border-slate-800/80 min-w-0">
                         {project.metrics.slice(0, 2).map((m, idx) => (
-                          <div key={idx} className="text-center">
-                            <span className="block text-xs font-bold text-white font-mono">
+                          <div key={idx} className="text-center min-w-0">
+                            <span className="block text-xs font-bold text-white font-mono truncate">
                               {m.value}
                             </span>
-                            <span className="text-[10px] text-slate-500 font-mono">
+                            <span className="text-[10px] text-slate-500 font-mono truncate block">
                               {m.label}
                             </span>
                           </div>
@@ -171,17 +171,17 @@ export const ProjectsSection: React.FC = () => {
                     )}
 
                     {/* Tech Tags */}
-                    <div className="flex flex-wrap gap-1.5 mb-6">
+                    <div className="flex flex-wrap gap-1.5 mb-6 min-w-0">
                       {project.technologies.slice(0, 4).map((tech, idx) => (
                         <span
                           key={idx}
-                          className="px-2 py-0.5 bg-slate-950/80 border border-slate-800 rounded text-[11px] font-mono text-slate-400"
+                          className="px-2 py-0.5 bg-slate-950/80 border border-slate-800 rounded text-[11px] font-mono text-slate-400 whitespace-nowrap"
                         >
                           {tech}
                         </span>
                       ))}
                       {project.technologies.length > 4 && (
-                        <span className="px-1.5 py-0.5 text-[10px] font-mono text-slate-500">
+                        <span className="px-1.5 py-0.5 text-[10px] font-mono text-slate-500 whitespace-nowrap">
                           +{project.technologies.length - 4} more
                         </span>
                       )}

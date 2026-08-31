@@ -81,6 +81,9 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
   const nextStartTimeRef = useRef<number>(0);
   const activeAudioSourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const animationFrameRef = useRef<number | null>(null);
+  const recognitionRef = useRef<any>(null);
+  const isFallbackVoiceRef = useRef<boolean>(false);
+  const isSpeakingRef = useRef<boolean>(false);
 
   useEffect(() => {
     setActiveTab(initialTab);
@@ -138,18 +141,56 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
         role: selectedRole
       };
 
-      const res = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(apiPayload)
-      });
+      let data: any = null;
+      let lastErrorMessage = '';
+      const maxRetries = 3;
 
-      if (!res.ok) {
-        const errorData = await res.json().catch(() => ({}));
-        throw new Error(errorData.error || `Server responded with ${res.status}`);
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        try {
+          const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(apiPayload)
+          });
+
+          const contentType = res.headers.get('content-type') || '';
+          
+          if (contentType.includes('application/json')) {
+            const parsed = await res.json();
+            if (res.ok) {
+              data = parsed;
+              break;
+            } else {
+              lastErrorMessage = parsed.error || `Server responded with status ${res.status}`;
+            }
+          } else {
+            const rawText = await res.text();
+            try {
+              const parsed = JSON.parse(rawText);
+              if (res.ok) {
+                data = parsed;
+                break;
+              } else {
+                lastErrorMessage = parsed.error || `Server responded with status ${res.status}`;
+              }
+            } catch {
+              lastErrorMessage = 'Server was momentarily restarting';
+            }
+          }
+        } catch (fetchErr: any) {
+          lastErrorMessage = fetchErr?.message || 'Network connection issue';
+        }
+
+        // If not successful and we have attempts left, wait briefly before retrying
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, attempt * 1000));
+        }
       }
 
-      const data = await res.json();
+      if (!data) {
+        throw new Error(lastErrorMessage || 'Unable to connect to Gemini assistant at this moment.');
+      }
+
       const modelMessage: Message = {
         id: `model-${Date.now()}`,
         role: 'model',
@@ -197,13 +238,129 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
   };
 
   // ==========================================
-  // GEMINI LIVE VOICE API IMPLEMENTATION
+  // GEMINI LIVE VOICE API & SPEECH PIPELINE
   // ==========================================
+  const startFallbackVoicePipeline = () => {
+    isFallbackVoiceRef.current = true;
+    setVoiceStatus('listening');
+    setVoiceError(null);
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      console.log('Browser SpeechRecognition not directly supported; audio visualization mode active.');
+      return;
+    }
+
+    try {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.abort();
+        } catch (e) {}
+      }
+
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+      recognition.interimResults = false;
+      recognition.lang = 'en-US';
+
+      recognition.onresult = async (event: any) => {
+        if (isMicMuted || isSpeakingRef.current) return;
+        const lastResultIndex = event.results.length - 1;
+        const spokenText = event.results[lastResultIndex][0]?.transcript?.trim();
+
+        if (spokenText) {
+          console.log('[Voice AI] Speech captured:', spokenText);
+          setVoiceTranscript(prev => [...prev, { sender: 'user', text: spokenText }]);
+          setVoiceStatus('speaking');
+          isSpeakingRef.current = true;
+
+          try {
+            const res = await fetch('/api/voice', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                prompt: spokenText,
+                role: selectedRole
+              })
+            });
+
+            if (res.ok) {
+              const data = await res.json();
+              const reply = data.replyText || "I am glad to tell you more about Avnish's work and projects.";
+              setVoiceTranscript(prev => [...prev, { sender: 'model', text: reply }]);
+              speakTextAloud(reply);
+            } else {
+              setVoiceStatus('listening');
+              isSpeakingRef.current = false;
+            }
+          } catch (e) {
+            console.error('[Voice AI] Request error:', e);
+            setVoiceStatus('listening');
+            isSpeakingRef.current = false;
+          }
+        }
+      };
+
+      recognition.onerror = (e: any) => {
+        console.warn('[Voice AI] Speech recognition status:', e?.error);
+      };
+
+      recognition.onend = () => {
+        if (isFallbackVoiceRef.current && recognitionRef.current && isVoiceActive) {
+          try {
+            recognition.start();
+          } catch (e) {}
+        }
+      };
+
+      recognition.start();
+      recognitionRef.current = recognition;
+    } catch (e) {
+      console.warn('[Voice AI] Could not initialize SpeechRecognition:', e);
+    }
+  };
+
+  const speakTextAloud = (text: string) => {
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 1.05;
+      utterance.pitch = 1.0;
+
+      const voices = window.speechSynthesis.getVoices();
+      const preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha')));
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+      }
+
+      utterance.onstart = () => {
+        setVoiceStatus('speaking');
+        isSpeakingRef.current = true;
+      };
+
+      utterance.onend = () => {
+        setVoiceStatus('listening');
+        isSpeakingRef.current = false;
+      };
+
+      utterance.onerror = () => {
+        setVoiceStatus('listening');
+        isSpeakingRef.current = false;
+      };
+
+      window.speechSynthesis.speak(utterance);
+    } else {
+      setVoiceStatus('listening');
+      isSpeakingRef.current = false;
+    }
+  };
+
   const startVoiceSession = async () => {
     try {
       setVoiceError(null);
       setVoiceStatus('connecting');
       setIsVoiceActive(true);
+      isFallbackVoiceRef.current = false;
 
       // Setup audio contexts
       // 16kHz for input mic capture, 24kHz for output playback
@@ -225,72 +382,8 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
       });
       mediaStreamRef.current = stream;
 
-      // Connect WebSocket to backend server Live bridge
-      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/api/live`;
-      const ws = new WebSocket(wsUrl);
-      wsRef.current = ws;
-
-      ws.onopen = () => {
-        setVoiceStatus('connected');
-        console.log('[Gemini Live] Client WebSocket opened.');
-      };
-
-      ws.onmessage = (event) => {
-        try {
-          const data = JSON.parse(event.data);
-
-          if (data.type === 'status' && data.status === 'connected') {
-            setVoiceStatus('listening');
-          }
-
-          if (data.type === 'audio' && data.audio) {
-            setVoiceStatus('speaking');
-            playAudioChunk(data.audio);
-          }
-
-          if (data.type === 'text' && data.text) {
-            setVoiceTranscript(prev => {
-              const last = prev[prev.length - 1];
-              if (last && last.sender === 'model') {
-                return [...prev.slice(0, -1), { sender: 'model', text: last.text + ' ' + data.text }];
-              }
-              return [...prev, { sender: 'model', text: data.text }];
-            });
-          }
-
-          if (data.type === 'interrupted') {
-            stopCurrentAudioPlayback();
-            setVoiceStatus('listening');
-          }
-
-          if (data.type === 'turnComplete') {
-            setVoiceStatus('listening');
-          }
-
-          if (data.type === 'error') {
-            setVoiceError(data.error || 'Voice session error');
-            setVoiceStatus('error');
-          }
-        } catch (e) {
-          console.error('[Gemini Live] Error handling message:', e);
-        }
-      };
-
-      ws.onerror = (e) => {
-        console.error('[Gemini Live] WebSocket error:', e);
-        setVoiceError('Could not establish Live voice connection.');
-        setVoiceStatus('error');
-      };
-
-      ws.onclose = () => {
-        setVoiceStatus('disconnected');
-        setIsVoiceActive(false);
-      };
-
-      // Setup microphone stream processor
+      // Setup microphone stream processor and visual volume analyser
       const source = inputAudioCtx.createMediaStreamSource(stream);
-      // Analyser for visual volume reactive bars
       const analyser = inputAudioCtx.createAnalyser();
       analyser.fftSize = 64;
       source.connect(analyser);
@@ -301,23 +394,93 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
       processor.connect(inputAudioCtx.destination);
 
       const updateVolume = () => {
-        if (!isVoiceActive) return;
         const array = new Uint8Array(analyser.frequencyBinCount);
         analyser.getByteFrequencyData(array);
         let sum = 0;
         for (let i = 0; i < array.length; i++) sum += array[i];
         const avg = sum / array.length;
-        setAudioLevel(Math.min(100, Math.round(avg * 1.5)));
+        setAudioLevel(Math.min(100, Math.round(avg * 1.6)));
         animationFrameRef.current = requestAnimationFrame(updateVolume);
       };
       updateVolume();
 
       processor.onaudioprocess = (e) => {
-        if (isMicMuted || ws.readyState !== WebSocket.OPEN) return;
-        const inputData = e.inputBuffer.getChannelData(0);
-        const base64Pcm = floatTo16BitPCMBase64(inputData);
-        ws.send(JSON.stringify({ type: 'audio', audio: base64Pcm }));
+        if (isMicMuted) return;
+        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+          const inputData = e.inputBuffer.getChannelData(0);
+          const base64Pcm = floatTo16BitPCMBase64(inputData);
+          wsRef.current.send(JSON.stringify({ type: 'audio', audio: base64Pcm }));
+        }
       };
+
+      // Connect WebSocket to backend server Live bridge
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/api/live`;
+      
+      try {
+        const ws = new WebSocket(wsUrl);
+        wsRef.current = ws;
+
+        ws.onopen = () => {
+          setVoiceStatus('connected');
+          console.log('[Gemini Live] Client WebSocket opened.');
+        };
+
+        ws.onmessage = (event) => {
+          try {
+            const data = JSON.parse(event.data);
+
+            if (data.type === 'status' && data.status === 'connected') {
+              setVoiceStatus('listening');
+            }
+
+            if (data.type === 'audio' && data.audio) {
+              setVoiceStatus('speaking');
+              playAudioChunk(data.audio);
+            }
+
+            if (data.type === 'text' && data.text) {
+              setVoiceTranscript(prev => {
+                const last = prev[prev.length - 1];
+                if (last && last.sender === 'model') {
+                  return [...prev.slice(0, -1), { sender: 'model', text: last.text + ' ' + data.text }];
+                }
+                return [...prev, { sender: 'model', text: data.text }];
+              });
+            }
+
+            if (data.type === 'interrupted') {
+              stopCurrentAudioPlayback();
+              setVoiceStatus('listening');
+            }
+
+            if (data.type === 'turnComplete') {
+              setVoiceStatus('listening');
+            }
+
+            if (data.type === 'error') {
+              console.warn('[Gemini Live] Falling back to resilient speech pipeline.');
+              startFallbackVoicePipeline();
+            }
+          } catch (e) {
+            console.error('[Gemini Live] Error handling message:', e);
+          }
+        };
+
+        ws.onerror = (e) => {
+          console.warn('[Gemini Live] WebSocket unavailable on current host, switching to Voice pipeline:', e);
+          startFallbackVoicePipeline();
+        };
+
+        ws.onclose = () => {
+          if (!isFallbackVoiceRef.current && isVoiceActive) {
+            startFallbackVoicePipeline();
+          }
+        };
+      } catch (wsInitErr) {
+        console.warn('[Gemini Live] WebSocket connection failed, starting Voice pipeline:', wsInitErr);
+        startFallbackVoicePipeline();
+      }
 
     } catch (err: any) {
       console.error('[Gemini Live] Failed to start voice:', err);
@@ -378,6 +541,19 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
     }
 
     stopCurrentAudioPlayback();
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    isSpeakingRef.current = false;
+    isFallbackVoiceRef.current = false;
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.abort();
+      } catch (e) {}
+      recognitionRef.current = null;
+    }
 
     if (scriptProcessorRef.current) {
       scriptProcessorRef.current.disconnect();

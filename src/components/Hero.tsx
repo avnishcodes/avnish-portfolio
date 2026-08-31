@@ -34,7 +34,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenResume }) => {
     { label: 'Python (Advanced)', icon: '🐍', bg: 'bg-amber-500/10 border-amber-500/20 text-amber-300' },
     { label: 'Machine Learning & AI', icon: '🤖', bg: 'bg-indigo-500/10 border-indigo-500/20 text-indigo-300' },
     { label: 'SQL & Pandas', icon: '🗄️', bg: 'bg-cyan-500/10 border-cyan-500/20 text-cyan-300' },
-    { label: 'Three.js / 3D Graphics', icon: '🧊', bg: 'bg-teal-500/10 border-teal-500/20 text-teal-300' },
+    { label: 'Deep Learning', icon: '🧠', bg: 'bg-teal-500/10 border-teal-500/20 text-teal-300' },
     { label: 'REST APIs', icon: '⚡', bg: 'bg-sky-500/10 border-sky-500/20 text-sky-300' },
     { label: 'NCC Cadet', icon: '🪖', bg: 'bg-emerald-500/10 border-emerald-500/20 text-emerald-300' }
   ];
@@ -305,14 +305,19 @@ export const Hero: React.FC<HeroProps> = ({ onOpenResume }) => {
                   </div>
 
                   {/* Status Badge */}
-                  <div className="flex items-center justify-between p-3.5 bg-teal-950/40 border border-teal-500/25 rounded-xl">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-teal-400 animate-pulse" />
-                      <span className="text-xs font-medium text-teal-300">
-                        Open to Internships &amp; Projects
-                      </span>
+                  <div className="flex items-start justify-between p-3.5 bg-teal-950/40 border border-teal-500/25 rounded-xl gap-3">
+                    <div className="flex items-start gap-2.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-teal-400 animate-pulse mt-0.5 shrink-0" />
+                      <div>
+                        <span className="text-xs font-semibold text-teal-300 block leading-tight">
+                          Open to Remote &amp; On-Site Roles
+                        </span>
+                        <span className="text-[11px] text-teal-400/80 font-sans block mt-0.5 leading-snug">
+                          Available for internships and software developer opportunities.
+                        </span>
+                      </div>
                     </div>
-                    <GraduationCap className="w-4 h-4 text-teal-400 opacity-80" />
+                    <GraduationCap className="w-4 h-4 text-teal-400 opacity-80 shrink-0 mt-0.5" />
                   </div>
 
                   {/* Quick links footer */}
