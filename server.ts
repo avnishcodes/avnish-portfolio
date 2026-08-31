@@ -77,7 +77,7 @@ app.post('/api/voice', async (req, res) => {
 
     const result = await processChatRequest({
       messages,
-      model: 'gemini-3.7-flash',
+      model: 'gemini-3.1-flash-lite',
       role,
       customInstruction: 'You are speaking via interactive voice. Keep your answer natural, spoken-style, and concise (under 2-3 sentences) so it sounds smooth when spoken aloud.'
     });
@@ -183,6 +183,9 @@ wss.on('connection', async (clientWs: WebSocket) => {
           liveSession.sendRealtimeInput({
             text: data.text,
           });
+        } else if (data.type === 'interrupt') {
+          // Acknowledge client interruption
+          clientWs.send(JSON.stringify({ type: 'interrupted', interrupted: true }));
         }
       } catch (err) {
         console.error('[Gemini Live] Error parsing client message:', err);

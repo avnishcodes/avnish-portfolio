@@ -247,7 +247,7 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      console.log('Browser SpeechRecognition not directly supported; audio visualization mode active.');
+      console.log('[Voice AI] SpeechRecognition API not available in current browser context. Interactive voice mode active.');
       return;
     }
 
@@ -270,34 +270,7 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
 
         if (spokenText) {
           console.log('[Voice AI] Speech captured:', spokenText);
-          setVoiceTranscript(prev => [...prev, { sender: 'user', text: spokenText }]);
-          setVoiceStatus('speaking');
-          isSpeakingRef.current = true;
-
-          try {
-            const res = await fetch('/api/voice', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                prompt: spokenText,
-                role: selectedRole
-              })
-            });
-
-            if (res.ok) {
-              const data = await res.json();
-              const reply = data.replyText || "I am glad to tell you more about Avnish's work and projects.";
-              setVoiceTranscript(prev => [...prev, { sender: 'model', text: reply }]);
-              speakTextAloud(reply);
-            } else {
-              setVoiceStatus('listening');
-              isSpeakingRef.current = false;
-            }
-          } catch (e) {
-            console.error('[Voice AI] Request error:', e);
-            setVoiceStatus('listening');
-            isSpeakingRef.current = false;
-          }
+          handleSpokenQuery(spokenText);
         }
       };
 
@@ -306,7 +279,7 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
       };
 
       recognition.onend = () => {
-        if (isFallbackVoiceRef.current && recognitionRef.current && isVoiceActive) {
+        if (isFallbackVoiceRef.current && recognitionRef.current && isVoiceActive && !isSpeakingRef.current) {
           try {
             recognition.start();
           } catch (e) {}
@@ -320,18 +293,67 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
     }
   };
 
+  const handleSpokenQuery = async (queryText: string) => {
+    if (!queryText.trim()) return;
+
+    // Interrupt any previous audio before answering new question
+    stopCurrentAudioPlayback();
+
+    setVoiceTranscript(prev => [...prev, { sender: 'user', text: queryText }]);
+    setVoiceStatus('speaking');
+    isSpeakingRef.current = true;
+
+    try {
+      const res = await fetch('/api/voice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: queryText,
+          role: selectedRole
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        const reply = data.replyText || "I am glad to tell you more about Avnish's work and projects.";
+        setVoiceTranscript(prev => [...prev, { sender: 'model', text: reply }]);
+        speakTextAloud(reply);
+      } else {
+        setVoiceStatus('listening');
+        isSpeakingRef.current = false;
+      }
+    } catch (e) {
+      console.error('[Voice AI] Request error:', e);
+      setVoiceStatus('listening');
+      isSpeakingRef.current = false;
+    }
+  };
+
   const speakTextAloud = (text: string) => {
+    stopCurrentAudioPlayback();
+
     if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
       const utterance = new SpeechSynthesisUtterance(text);
-      utterance.rate = 1.05;
+      utterance.rate = 1.0;
       utterance.pitch = 1.0;
 
       const voices = window.speechSynthesis.getVoices();
-      const preferredVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha')));
+      const preferredVoice = voices.find(v => 
+        v.lang.startsWith('en') && (v.name.includes('Natural') || v.name.includes('Google') || v.name.includes('Samantha') || v.name.includes('Daniel'))
+      );
       if (preferredVoice) {
         utterance.voice = preferredVoice;
       }
+
+      // Simulate dynamic audio levels while speaking
+      const waveInterval = setInterval(() => {
+        if (!isSpeakingRef.current) {
+          clearInterval(waveInterval);
+          setAudioLevel(0);
+          return;
+        }
+        setAudioLevel(Math.floor(Math.random() * 60) + 30);
+      }, 100);
 
       utterance.onstart = () => {
         setVoiceStatus('speaking');
@@ -339,11 +361,22 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
       };
 
       utterance.onend = () => {
+        clearInterval(waveInterval);
+        setAudioLevel(0);
         setVoiceStatus('listening');
         isSpeakingRef.current = false;
+        
+        // Resume speech recognition listener if fallback is active
+        if (isFallbackVoiceRef.current && recognitionRef.current && isVoiceActive) {
+          try {
+            recognitionRef.current.start();
+          } catch (e) {}
+        }
       };
 
       utterance.onerror = () => {
+        clearInterval(waveInterval);
+        setAudioLevel(0);
         setVoiceStatus('listening');
         isSpeakingRef.current = false;
       };
@@ -363,7 +396,6 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
       isFallbackVoiceRef.current = false;
 
       // Setup audio contexts
-      // 16kHz for input mic capture, 24kHz for output playback
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       const inputAudioCtx = new AudioCtx({ sampleRate: 16000 });
       const outputAudioCtx = new AudioCtx({ sampleRate: 24000 });
@@ -372,46 +404,56 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
       nextStartTimeRef.current = outputAudioCtx.currentTime;
 
       // Request microphone access
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: { 
-          channelCount: 1, 
-          sampleRate: 16000, 
-          echoCancellation: true, 
-          noiseSuppression: true 
-        } 
-      });
-      mediaStreamRef.current = stream;
+      let stream: MediaStream | null = null;
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({ 
+          audio: { 
+            channelCount: 1, 
+            sampleRate: 16000, 
+            echoCancellation: true, 
+            noiseSuppression: true 
+          } 
+        });
+        mediaStreamRef.current = stream;
 
-      // Setup microphone stream processor and visual volume analyser
-      const source = inputAudioCtx.createMediaStreamSource(stream);
-      const analyser = inputAudioCtx.createAnalyser();
-      analyser.fftSize = 64;
-      source.connect(analyser);
+        // Setup microphone stream processor and visual volume analyser
+        const source = inputAudioCtx.createMediaStreamSource(stream);
+        const analyser = inputAudioCtx.createAnalyser();
+        analyser.fftSize = 64;
+        source.connect(analyser);
 
-      const processor = inputAudioCtx.createScriptProcessor(4096, 1, 1);
-      scriptProcessorRef.current = processor;
-      source.connect(processor);
-      processor.connect(inputAudioCtx.destination);
+        const processor = inputAudioCtx.createScriptProcessor(4096, 1, 1);
+        scriptProcessorRef.current = processor;
+        source.connect(processor);
+        processor.connect(inputAudioCtx.destination);
 
-      const updateVolume = () => {
-        const array = new Uint8Array(analyser.frequencyBinCount);
-        analyser.getByteFrequencyData(array);
-        let sum = 0;
-        for (let i = 0; i < array.length; i++) sum += array[i];
-        const avg = sum / array.length;
-        setAudioLevel(Math.min(100, Math.round(avg * 1.6)));
-        animationFrameRef.current = requestAnimationFrame(updateVolume);
-      };
-      updateVolume();
+        const updateVolume = () => {
+          if (!isSpeakingRef.current) {
+            const array = new Uint8Array(analyser.frequencyBinCount);
+            analyser.getByteFrequencyData(array);
+            let sum = 0;
+            for (let i = 0; i < array.length; i++) sum += array[i];
+            const avg = sum / array.length;
+            setAudioLevel(Math.min(100, Math.round(avg * 1.6)));
+          }
+          animationFrameRef.current = requestAnimationFrame(updateVolume);
+        };
+        updateVolume();
 
-      processor.onaudioprocess = (e) => {
-        if (isMicMuted) return;
-        if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
-          const inputData = e.inputBuffer.getChannelData(0);
-          const base64Pcm = floatTo16BitPCMBase64(inputData);
-          wsRef.current.send(JSON.stringify({ type: 'audio', audio: base64Pcm }));
-        }
-      };
+        processor.onaudioprocess = (e) => {
+          if (isMicMuted) return;
+          if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+            const inputData = e.inputBuffer.getChannelData(0);
+            const base64Pcm = floatTo16BitPCMBase64(inputData);
+            wsRef.current.send(JSON.stringify({ type: 'audio', audio: base64Pcm }));
+          }
+        };
+      } catch (micErr: any) {
+        console.log('[Voice AI] Direct microphone access not available or blocked in current frame; enabling interactive voice mode.', micErr?.message);
+        startFallbackVoicePipeline();
+        setVoiceStatus('listening');
+        return;
+      }
 
       // Connect WebSocket to backend server Live bridge
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -436,6 +478,7 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
 
             if (data.type === 'audio' && data.audio) {
               setVoiceStatus('speaking');
+              isSpeakingRef.current = true;
               playAudioChunk(data.audio);
             }
 
@@ -451,15 +494,15 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
 
             if (data.type === 'interrupted') {
               stopCurrentAudioPlayback();
-              setVoiceStatus('listening');
             }
 
             if (data.type === 'turnComplete') {
               setVoiceStatus('listening');
+              isSpeakingRef.current = false;
             }
 
             if (data.type === 'error') {
-              console.warn('[Gemini Live] Falling back to resilient speech pipeline.');
+              console.warn('[Gemini Live] Falling back to voice pipeline.');
               startFallbackVoicePipeline();
             }
           } catch (e) {
@@ -483,10 +526,9 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
       }
 
     } catch (err: any) {
-      console.error('[Gemini Live] Failed to start voice:', err);
-      setVoiceError(err?.message || 'Failed to initialize microphone access.');
-      setVoiceStatus('error');
-      setIsVoiceActive(false);
+      console.error('[Gemini Live] Fallback voice starting:', err);
+      startFallbackVoicePipeline();
+      setVoiceStatus('listening');
     }
   };
 
@@ -515,6 +557,7 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
         activeAudioSourcesRef.current = activeAudioSourcesRef.current.filter(s => s !== sourceNode);
         if (activeAudioSourcesRef.current.length === 0) {
           setVoiceStatus('listening');
+          isSpeakingRef.current = false;
         }
       };
     } catch (e) {
@@ -523,6 +566,7 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
   };
 
   const stopCurrentAudioPlayback = () => {
+    // 1. Stop all active WebAudio sources
     activeAudioSourcesRef.current.forEach(source => {
       try {
         source.stop();
@@ -530,9 +574,29 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
       } catch (e) {}
     });
     activeAudioSourcesRef.current = [];
+    
     if (outputAudioCtxRef.current) {
       nextStartTimeRef.current = outputAudioCtxRef.current.currentTime;
     }
+
+    // 2. Stop browser speech synthesis if active
+    if ('speechSynthesis' in window) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch (e) {}
+    }
+
+    // 3. Notify backend WebSocket if open
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
+      try {
+        wsRef.current.send(JSON.stringify({ type: 'interrupt' }));
+      } catch (e) {}
+    }
+
+    // 4. Reset state flags
+    isSpeakingRef.current = false;
+    setAudioLevel(0);
+    setVoiceStatus('listening');
   };
 
   const stopVoiceSession = () => {
@@ -991,11 +1055,45 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
               )}
             </div>
 
+            {/* Spoken Topic Triggers */}
+            <div className="w-full max-w-lg mb-4">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-[11px] font-mono text-slate-400">Tap any question to test voice:</span>
+                {isSpeakingRef.current && (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-mono text-amber-400 animate-pulse">
+                    <Volume2 className="w-3.5 h-3.5" /> Speaking · Click Interrupt anytime
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-2 overflow-x-auto pb-1">
+                {[
+                  { label: '🎯 ML Projects', text: "What machine learning projects has Avnish built?" },
+                  { label: '🎓 B.Tech & CGPA', text: "Tell me about Avnish's B.Tech in CSE at IKGPTU and his academic scores." },
+                  { label: '💼 EME Internship', text: "What did Avnish accomplish during his ML internship at EME Technologies?" },
+                  { label: '⚡ Python Skills', text: "Which Python libraries, ML frameworks, and tools does Avnish specialize in?" }
+                ].map((item, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      if (!isVoiceActive) {
+                        setIsVoiceActive(true);
+                      }
+                      handleSpokenQuery(item.text);
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-slate-800/90 hover:bg-indigo-600 border border-slate-700 hover:border-indigo-500 text-slate-300 hover:text-white text-xs font-mono shrink-0 transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer shadow-sm"
+                  >
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Live Transcript Log (if available) */}
             {voiceTranscript.length > 0 && (
-              <div className="w-full max-w-lg p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-mono text-slate-300 space-y-1.5 mb-4 max-h-24 overflow-y-auto">
-                <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Live Transcript:</span>
-                {voiceTranscript.slice(-2).map((item, idx) => (
+              <div className="w-full max-w-lg p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs font-mono text-slate-300 space-y-1.5 mb-4 max-h-28 overflow-y-auto">
+                <span className="text-[10px] text-slate-500 uppercase tracking-wider block">Live Voice Transcript:</span>
+                {voiceTranscript.slice(-3).map((item, idx) => (
                   <p key={idx} className="text-slate-300">
                     <strong className={item.sender === 'user' ? 'text-indigo-400' : 'text-purple-400'}>
                       {item.sender === 'user' ? 'You: ' : 'Gemini: '}
@@ -1014,12 +1112,12 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
             )}
 
             {/* Voice Control Buttons */}
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 sm:gap-4 mt-2">
               {!isVoiceActive ? (
                 <button
                   onClick={startVoiceSession}
                   id="start-live-voice-btn"
-                  className="flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-sm font-mono transition-all shadow-lg shadow-purple-600/30 active:scale-95 cursor-pointer"
+                  className="flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-sm font-mono transition-all shadow-lg shadow-purple-600/30 active:scale-95 cursor-pointer"
                 >
                   <PhoneCall className="w-4 h-4 text-emerald-300" />
                   <span>Start Voice Call</span>
@@ -1030,7 +1128,7 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
                   <button
                     onClick={() => setIsMicMuted(!isMicMuted)}
                     title={isMicMuted ? "Unmute Microphone" : "Mute Microphone"}
-                    className={`p-3.5 rounded-2xl border transition-all ${
+                    className={`p-3.5 rounded-2xl border transition-all cursor-pointer ${
                       isMicMuted 
                         ? 'bg-amber-500/20 border-amber-500/40 text-amber-300' 
                         : 'bg-slate-800 border-slate-700 text-slate-200 hover:bg-slate-700'
@@ -1042,18 +1140,23 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
                   {/* Interrupt / Stop speaking button */}
                   <button
                     onClick={stopCurrentAudioPlayback}
-                    title="Interrupt model playback"
-                    className="px-4 py-3.5 rounded-2xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-mono flex items-center gap-1.5 transition-all"
+                    id="interrupt-voice-btn"
+                    title="Instantly stop Gemini from speaking"
+                    className={`px-5 py-3.5 rounded-2xl font-mono text-xs flex items-center gap-2 transition-all cursor-pointer shadow-md ${
+                      voiceStatus === 'speaking' || isSpeakingRef.current
+                        ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold ring-4 ring-amber-500/30 animate-pulse'
+                        : 'bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200'
+                    }`}
                   >
-                    <VolumeX className="w-4 h-4 text-amber-400" />
-                    <span>Interrupt</span>
+                    <VolumeX className={`w-4 h-4 ${voiceStatus === 'speaking' || isSpeakingRef.current ? 'text-slate-950' : 'text-amber-400'}`} />
+                    <span>Interrupt Speech</span>
                   </button>
 
                   {/* End Call Button */}
                   <button
                     onClick={stopVoiceSession}
                     id="end-live-voice-btn"
-                    className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs font-mono transition-all shadow-lg shadow-rose-600/30 active:scale-95 cursor-pointer"
+                    className="flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-semibold text-xs font-mono transition-all shadow-lg shadow-rose-600/30 active:scale-95 cursor-pointer"
                   >
                     <PhoneOff className="w-4 h-4" />
                     <span>End Call</span>
@@ -1064,7 +1167,7 @@ export const GeminiAiModal: React.FC<GeminiAiModalProps> = ({
 
             {/* Instructions Footer */}
             <div className="text-[11px] font-mono text-slate-500 text-center mt-4">
-              💡 Tip: Click 'Start Voice Call' and begin speaking. You can interrupt Gemini naturally at any point!
+              💡 Tip: You can speak through your microphone or tap any topic chip above. Click <span className="text-amber-400 font-semibold">Interrupt Speech</span> anytime to cut in!
             </div>
           </div>
         )}
